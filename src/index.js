@@ -1,5 +1,6 @@
 import dotenv from "dotenv"
 import ConnnectDb from "./db/index.js";
+import { app } from "./app.js";
 
 
 dotenv.config({
@@ -10,7 +11,7 @@ ConnnectDb()
 .then(
     ()=>{
         app.listen(process.env.PORT ||8000,()=>{
-            console.log(`Your port is running at http://localhost${process.env.PORT}`);
+            console.log(`Your port is running at http://localhost:${process.env.PORT}`);
             
         })
     }
