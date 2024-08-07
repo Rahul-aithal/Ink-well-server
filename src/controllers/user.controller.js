@@ -272,4 +272,4 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
 
 
 
-export { signIn, signUp, signOut, refreshAccessToken };
+export { signIn, signUp, signOut, refreshAccessToken,changeCurrentPassword,getCurrentUser,updateAccountDetails };
