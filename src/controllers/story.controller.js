@@ -98,17 +98,40 @@ const WriteStory = asyncHandler(async (req, res) => {
     });
 
     // Retrieve the story with populated fields
-    const populatedStory = await Story.findById(newStory._id).populate(
-        "owners"
-    );
+    if (newStory) {
+        try {
+            const user = await User.findByIdAndUpdate(
+                req.user._id,
+                {
+                    $set: {
+                        storyHistory: newStory._id,
+                    },
+                },
+                { new: true }
+            );
+            const populatedStory = await Story.findById(newStory._id).populate(
+                "owners"
+            );
 
-    if (!populatedStory) {
-        throw new ApiError(500, "Something went wrong while creating story");
+            if (!populatedStory) {
+                throw new ApiError(
+                    500,
+                    "Something went wrong while creating story"
+                );
+            }
+
+            res.status(201).json(
+                new ApiResponse(
+                    200,
+                    populatedStory,
+                    "Story written Successfully"
+                )
+            );
+        } catch (error) {
+            res.status(500);
+            throw new ApiError(500, error);
+        }
     }
-
-    res.status(201).json(
-        new ApiResponse(200, populatedStory, "Story written Successfully")
-    );
 });
 
 const getstoryById = asyncHandler(async (req, res) => {
