@@ -11,9 +11,10 @@ const storySchema = new Schema(
         ],
 
         title: {
-            type: Strings,
+            type: String,
             required: true,
             trim: true,
+            unique: true,
         },
         description: {
             type: String,
@@ -22,11 +23,20 @@ const storySchema = new Schema(
         avatar: {
             type: String,
         },
+        story:{
+            type: String,
+            required: true,
+        },
         isEditable: {
             type: Boolean,
             required: true,
             default: false,
         },
+        genre:{
+            type:String,
+            required:true,
+            trim: true
+        }
     },
     {
         timestamps: true,
