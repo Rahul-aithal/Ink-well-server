@@ -23,9 +23,9 @@ const generateAccessAndRefereshTokens = async (userId) => {
     }
 };
 
-const signIn = asyncHandler(async (req, res, next) => {
+const signUp = asyncHandler(async (req, res, next) => {
     const { email, username, password } = req.body;
-    // console.log("email: ", email, typeof email);
+    console.log("email: ", email, typeof email);
 
     if ([email, username, password].some((field) => field?.trim() === "")) {
         throw new ApiError(400, "All fields are required");
@@ -38,26 +38,6 @@ const signIn = asyncHandler(async (req, res, next) => {
     if (existedUser) {
         throw new ApiError(409, "User with email or username already exists");
     }
-    //console.log(req.files);
-
-    // const avatarLocalPath = req.files?.avatar[0]?.path;
-    //const coverImageLocalPath = req.files?.coverImage[0]?.path;
-
-    // let coverImageLocalPath;
-    // if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-    //     coverImageLocalPath = req.files.coverImage[0].path
-    // }
-
-    // if (!avatarLocalPath) {
-    //     throw new ApiError(400, "Avatar file is required")
-    // }
-
-    // const avatar = await uploadCloudinaryResult(avatarLocalPath)
-
-    // if (!avatar) {
-    //     throw new ApiError(400, "Avatar file is required")
-    // }
-
     const user = await User.create({
         email,
         password,
@@ -80,7 +60,7 @@ const signIn = asyncHandler(async (req, res, next) => {
     );
 });
 
-const signUp = asyncHandler(async (req, res, next) => {
+const signIn = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
     // console.log("email: ", email);
 
@@ -238,10 +218,10 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, req.user, "User fetched successfully"));
 });
 
-const updateAccountDetails = asyncHandler(async (req, res) => {
-    const { username, email } = req.body;
+const updateUsername = asyncHandler(async (req, res) => {
+    const { username } = req.body;
 
-    if (!username || !email) {
+    if (!username ) {
         throw new ApiError(400, "All fields are required");
     }
 
@@ -250,7 +230,31 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         {
             $set: {
                 username,
-                email: email,
+            
+            },
+        },
+        { new: true }
+    ).select("-password");
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, user, "Account details updated successfully")
+        );
+});
+const updateEmail = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if ( !email) {
+        throw new ApiError(400, "All fields are required");
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+               
+                email,
             },
         },
         { new: true }
@@ -387,7 +391,8 @@ export {
     refreshAccessToken,
     changeCurrentPassword,
     getCurrentUser,
-    updateAccountDetails,
+    updateEmail,
+    updateUsername,
     getUserAuthorProfile,
     getstoryHistory,
 };
