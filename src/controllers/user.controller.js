@@ -136,11 +136,17 @@ const signUp = asyncHandler(async (req, res, next) => {
 
 const signOut = asyncHandler(async (req, res, next) => {
     if (!req.user._id) throw new ApiError(500, "Error in tokens");
-    await User.findByIdAndUpdate(req.user._id, {
-        $set: {
-            refreshToken: undefined,
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $unset: {
+                refreshToken: 1,
+            },
         },
-    });
+        {
+            new: true,
+        }
+    );
 
     const options = {
         httpOnly: true,
@@ -164,23 +170,19 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401, "unauthorized request");
     }
     // console.log("Incoming Refresh Token:", incomingRefreshToken);
-    
-    
+
     try {
         const decodedToken = jwt.verify(
             incomingRefreshToken,
-            process.env.REFRESH_TOKEN_SECRET    
+            process.env.REFRESH_TOKEN_SECRET
         );
-
 
         const user = await User.findById(decodedToken?._id);
 
-
         if (!user) {
-    
             throw new ApiError(401, "Invalid refresh token");
         }
-        
+
         if (incomingRefreshToken !== user?.refreshToken) {
             throw new ApiError(401, "Refresh token is expired or used");
         }
@@ -208,68 +210,184 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             );
     } catch (error) {
         console.error("Error refreshing access token:", error);
-        throw Error( "Invalid refresh token");
+        throw Error("Invalid refresh token");
     }
 });
 
-const changeCurrentPassword = asyncHandler(async(req, res) => {
-    const {oldPassword, newPassword} = req.body
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
 
-    
-
-    const user = await User.findById(req.user?._id)
-    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+    const user = await User.findById(req.user?._id);
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
     if (!isPasswordCorrect) {
-        throw new ApiError(400, "Invalid old password")
+        throw new ApiError(400, "Invalid old password");
     }
 
-    user.password = newPassword
-    await user.save({validateBeforeSave: false})
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
 
     return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Password changed successfully"))
-})
+        .status(200)
+        .json(new ApiResponse(200, {}, "Password changed successfully"));
+});
 
-
-const getCurrentUser = asyncHandler(async(req, res) => {
+const getCurrentUser = asyncHandler(async (req, res) => {
     return res
-    .status(200)
-    .json(new ApiResponse(
-        200,
-        req.user,
-        "User fetched successfully"
-    ))
-})
+        .status(200)
+        .json(new ApiResponse(200, req.user, "User fetched successfully"));
+});
 
-const updateAccountDetails = asyncHandler(async(req, res) => {
-    const {username, email} = req.body
+const updateAccountDetails = asyncHandler(async (req, res) => {
+    const { username, email } = req.body;
 
     if (!username || !email) {
-        throw new ApiError(400, "All fields are required")
+        throw new ApiError(400, "All fields are required");
     }
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
-                username ,
-                email: email
-            }
+                username,
+                email: email,
+            },
         },
-        {new: true}
-        
-    ).select("-password")
+        { new: true }
+    ).select("-password");
 
     return res
-    .status(200)
-    .json(new ApiResponse(200, user, "Account details updated successfully"))
+        .status(200)
+        .json(
+            new ApiResponse(200, user, "Account details updated successfully")
+        );
 });
 
+const getUserAuthorProfile = asyncHandler(async (req, res) => {
+    const username = body.params;
 
+    if (!username?.trim()) {
+        throw new ApiError(404, "username is required");
+    }
 
+    const author = await User.aggregate([
+        {
+            $match: username?.toLowerCase(),
+        },
+        {
+            $lookup: {
+                from: "follows",
+                localField: "_id",
+                foreignField: "author",
+                as: "followers",
+            },
+        },
+        {
+            $lookup: {
+                from: "follows",
+                localField: "_id",
+                foreignField: "follower",
+                as: "following",
+            },
+        },
+        {
+            $addFields: {
+                follwersCount: { $size: "$follwers" },
+                followingCount: { $size: "$following" },
+                isFollowing: {
+                    $cond: {
+                        if: {
+                            $in: [req.user?._id, "$follwers.follwer"],
+                        },
+                        then: true,
+                        else: false,
+                    },
+                },
+            },
+        },
+        {
+            $project: {
+                username: 1,
+                email: 1,
+                follwersCount: 1,
+                followingCount: 1,
+                isFollowing: 1,
+            },
+        },
+    ]);
 
+    if (author.length > 0) {
+        throw new ApiError(404, "Author does not exists");
+    }
 
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, author[0], "User author fecthed sucessfully")
+        );
+});
 
-export { signIn, signUp, signOut, refreshAccessToken,changeCurrentPassword,getCurrentUser,updateAccountDetails };
+const getstoryHistory = asyncHandler(async (req, res) => {
+    const user = await User.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(req.user._id),
+            },
+        },
+        {
+            $lookup: {
+                from: "storys",
+                localField: "storyHistory",
+                foreignField: "_id",
+                as: "storyHistory",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        username: 1,
+                                        email: 1,
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner",
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+    ]);
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user[0].watchHistory,
+                "Watch history fetched successfully"
+            )
+        );
+});
+
+export {
+    signIn,
+    signUp,
+    signOut,
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccountDetails,
+    getUserAuthorProfile,
+    getstoryHistory,
+};
