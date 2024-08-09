@@ -54,8 +54,8 @@ const getAllStorys = asyncHandler(async (req, res) => {
 
 const WriteStory = asyncHandler(async (req, res) => {
     // TODO: get story, create story
-    const { title, description, story, genre, owners } = req.body;
-    if (!title || !description || !story || !genre) {
+    const { title, description, story, genre, owners = "" } = req.body;
+    if (!title || !description || !story) {
         throw new ApiError(400, "All fields are required");
     }
     let authors = owners.toString().split(",");
@@ -87,7 +87,7 @@ const WriteStory = asyncHandler(async (req, res) => {
     });
 
     if (existedStory) {
-        throw new ApiError(409, "Story with email or username already exists");
+        throw new ApiError(409, "Story with same title already exists");
     }
     const newStory = await Story.create({
         title,
@@ -123,7 +123,7 @@ const WriteStory = asyncHandler(async (req, res) => {
             res.status(201).json(
                 new ApiResponse(
                     200,
-                    populatedStory,
+                    { populatedStory, user },
                     "Story written Successfully"
                 )
             );

@@ -7,8 +7,8 @@ export const verifyToken = asyncHandler(async (req, res, next) => {
     try {
         const token = req.cookies.accessToken;
 
-        if (token === undefined) {
-            throw new Error(401, "Unotherized Request");
+        if (!token) {
+            throw new ApiError(401, "Unauthorized Request");
         }
 
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
@@ -17,15 +17,19 @@ export const verifyToken = asyncHandler(async (req, res, next) => {
             "-createdAt -updatedAt -refreshToken -password"
         );
 
-        // console.log(user);
-
         if (!user) {
-            throw new ApiError(401, "Invalid Access token");
+            throw new ApiError(401, "Invalid Access Token");
         }
-        req.user = user;
 
+        req.user = user;
         next();
     } catch (err) {
-        throw new ApiError(res, 500, _, err, next);
+        if (err.name === 'TokenExpiredError') {
+            throw new ApiError(401, "Token has expired");
+        } else if (err.name === 'JsonWebTokenError') {
+            throw new ApiError(401, "Invalid Token");
+        } else {
+            throw new ApiError(500, err.message || "Internal Server Error");
+        }
     }
 });

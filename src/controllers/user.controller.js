@@ -1,8 +1,10 @@
+import mongoose from "mongoose";
 import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
+
 
 const generateAccessAndRefereshTokens = async (userId) => {
     try {
@@ -332,53 +334,22 @@ const getUserAuthorProfile = asyncHandler(async (req, res) => {
 });
 
 const getstoryHistory = asyncHandler(async (req, res) => {
-    const user = await User.aggregate([
-        {
-            $match: {
-                _id: new mongoose.Types.ObjectId(req.user._id),
-            },
-        },
-        {
-            $lookup: {
-                from: "storys",
-                localField: "storyHistory",
-                foreignField: "_id",
-                as: "storyHistory",
-                pipeline: [
-                    {
-                        $lookup: {
-                            from: "users",
-                            localField: "owner",
-                            foreignField: "_id",
-                            as: "owner",
-                            pipeline: [
-                                {
-                                    $project: {
-                                        username: 1,
-                                        email: 1,
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                    {
-                        $addFields: {
-                            owner: {
-                                $first: "$owner",
-                            },
-                        },
-                    },
-                ],
-            },
-        },
-    ]);
+    const user = await User.findById(req.user._id)
+    .populate({
+        path: 'storyHistory',
+        populate: {
+            path: 'owners',
+            model: 'User',
+            select: 'username' 
+        }
+    })
 
     return res
         .status(200)
         .json(
             new ApiResponse(
                 200,
-                user[0].watchHistory,
+                user,
                 "Watch history fetched successfully"
             )
         );
