@@ -54,12 +54,12 @@ const getAllStorys = asyncHandler(async (req, res) => {
 
 const WriteStory = asyncHandler(async (req, res) => {
     // TODO: get story, create story
-    const { title, description, story, genre, owners = "" } = req.body;
-    if (!title || !description || !story) {
+    const { title, description="", story, genre, owners = "" } = req.body;
+    if (!title || !description || !story || !genre) {
         throw new ApiError(400, "All fields are required");
     }
     let authors = owners.toString().split(",");
-    console.log(authors);
+    // console.log(authors);
     let authorsId;
 
     if (authors.length > 1) {
