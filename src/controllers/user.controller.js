@@ -5,7 +5,6 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 
-
 const generateAccessAndRefereshTokens = async (userId) => {
     try {
         const user = await User.findById(userId);
@@ -71,7 +70,7 @@ const signIn = asyncHandler(async (req, res, next) => {
     }
 
     const user = await User.findOne({
-        email
+        email,  
     });
 
     if (!user) {
@@ -223,7 +222,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 const updateUsername = asyncHandler(async (req, res) => {
     const { username } = req.body;
 
-    if (!username ) {
+    if (!username) {
         throw new ApiError(400, "All fields are required");
     }
 
@@ -232,7 +231,6 @@ const updateUsername = asyncHandler(async (req, res) => {
         {
             $set: {
                 username,
-            
             },
         },
         { new: true }
@@ -247,7 +245,7 @@ const updateUsername = asyncHandler(async (req, res) => {
 const updateEmail = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
-    if ( !email) {
+    if (!email) {
         throw new ApiError(400, "All fields are required");
     }
 
@@ -255,7 +253,6 @@ const updateEmail = asyncHandler(async (req, res) => {
         req.user?._id,
         {
             $set: {
-               
                 email,
             },
         },
@@ -334,25 +331,35 @@ const getUserAuthorProfile = asyncHandler(async (req, res) => {
 });
 
 const getstoryHistory = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id)
-    .populate({
-        path: 'storyHistory',
+    const user = await User.findById(req.user._id).populate({
+        path: "storyHistory",
         populate: {
-            path: 'owners',
-            model: 'User',
-            select: 'username' 
-        }
-    })
+            path: "owners",
+            model: "User",
+            select: "username",
+        },
+    });
 
     return res
         .status(200)
-        .json(
-            new ApiResponse(
-                200,
-                user,
-                "Watch history fetched successfully"
-            )
-        );
+        .json(new ApiResponse(200, user, "Watch history fetched successfully"));
+});
+
+const searchUserByUserName = asyncHandler(async (req, res) => {
+    const { username } = req.query;
+
+    if (!username) throw new ApiError(400, "username is required");
+
+    const resultsOfUser = await User.find({
+        username: new RegExp(username, "i"),
+    }).select("username id");
+
+    if (resultsOfUser.length === 0) {
+        // If no results are found, return an empty array with a 200 status
+        return res.status(200).json(new ApiResponse(200, []));
+    }
+
+    return res.status(200).json(new ApiResponse(200, resultsOfUser));
 });
 
 export {
@@ -366,4 +373,5 @@ export {
     updateUsername,
     getUserAuthorProfile,
     getstoryHistory,
+    searchUserByUserName
 };
