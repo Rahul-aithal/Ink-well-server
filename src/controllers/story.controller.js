@@ -8,20 +8,21 @@ import { User } from "../models/user.models.js";
 const getAllStorys = asyncHandler(async (req, res) => {
     const {
         limit = 10,
-        query,
+        search,
         sortBy = "title",
         sortType,
         username,
-    } = req.body;
-    //TODO: get all storys based on query, sort
-    if (!query) {
-        console.log(query);
-        throw new ApiError(404, "query is required");
+    } = req.query;
+
+    //TODO: get all storys based on search, sort
+    if (!search) {
+        throw new ApiError(400, "search not found"); // Case-insensitive search on title
     }
     let filter = {};
-    if (query) {
-        filter.title = { $regex: query, $options: "i" }; // Case-insensitive search on title
-    }
+    search !== "all"
+        ? (filter.title = { $regex: search, $options: "i" })
+        : (filter.title = { $regex: "", $options: "i" }); // Case-insensitive search on title
+
     if (username) {
         filter.owners = username; // Filter by owner ID if provided
     }
@@ -35,10 +36,12 @@ const getAllStorys = asyncHandler(async (req, res) => {
         const stories = await Story.find(filter)
             .populate({
                 path: "owners", // The field to populate
-                select: "-updatedAt -createdAt -storyHistory -refreshToken -password",
+                select: "username id",
             })
             .sort(sort)
-            .limit(parseInt(limit));
+            .limit(parseInt(limit))
+            .select('-createdAt -updatedAt -isEditable')
+            ;
 
         // Fetch the total count of stories for pagination purposes
         const totalStories = await Story.countDocuments(filter);
@@ -54,7 +57,7 @@ const getAllStorys = asyncHandler(async (req, res) => {
 
 const WriteStory = asyncHandler(async (req, res) => {
     // TODO: get story, create story
-    const { title, description="", story, genre, owners = "" } = req.body;
+    const { title, description = "", story, genre, owners = "" } = req.body;
     if (!title || !description || !story || !genre) {
         throw new ApiError(400, "All fields are required");
     }
