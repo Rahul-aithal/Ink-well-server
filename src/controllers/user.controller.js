@@ -4,6 +4,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
+import { Comment } from "../models/comment.models.js";
+import { Like } from "../models/like.models.js";
 
 const generateAccessAndRefereshTokens = async (userId) => {
     try {
@@ -70,7 +72,7 @@ const signIn = asyncHandler(async (req, res, next) => {
     }
 
     const user = await User.findOne({
-        email,  
+        email,
     });
 
     if (!user) {
@@ -363,6 +365,90 @@ const searchUserByUserName = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, resultsOfUser));
 });
 
+const getCommentHistory = asyncHandler(async (req, res) => {
+    const comments = await Comment.aggregate([
+        {
+            $match: { commenter: req.user._id },
+        },
+        {
+            $lookup: {
+                from: "stories",
+                localField: "commentedStory",
+                foreignField: "_id",
+                as: "commentedStories",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            title: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $facet: {
+                storyDetails: [
+                    {
+                        $project: {
+                            commentedStories: 1,
+                            comment: 1,
+                        },
+                    },
+                ],
+                totalComments: [
+                    {
+                        $count: "totalComments",
+                    },
+                ],
+            },
+        },
+    ]);
+    res.status(200).json(new ApiResponse(200, comments));
+});
+
+const   getLikesHistory = asyncHandler(async (req, res) => {
+    const likes = await Like.aggregate([
+        {
+            $match: { likedUser: req.user._id },
+        },
+        {
+            $lookup: {
+                from: "stories",
+                localField: "likedStory",
+                foreignField: "_id",
+                as: "likedStories",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            title: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $facet: {
+                storyDetails: [
+                    {
+                        $project: {
+                            likedStories: 1,
+                        },
+                    },
+                ],
+                totalLikes: [
+                    {
+                        $count: "totalLikes ",
+                    },
+                ],
+            },
+        },
+    ]);
+    res.status(200).json(new ApiResponse(200, likes));
+});
+
+
 export {
     signIn,
     signUp,
@@ -374,5 +460,7 @@ export {
     updateUsername,
     getUserAuthorProfile,
     getstoryHistory,
-    searchUserByUserName
+    searchUserByUserName,
+    getCommentHistory,
+    getLikesHistory,
 };
