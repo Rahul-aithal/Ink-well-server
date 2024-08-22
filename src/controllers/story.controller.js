@@ -1,9 +1,11 @@
-import mongoose, { isValidObjectId } from "mongoose";
+import mongoose from "mongoose";
 import { Story } from "../models/stroy.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.models.js";
+import { Like } from "../models/like.models.js";
+import { Comment } from "../models/comment.models.js";
 
 const getAllStorys = asyncHandler(async (req, res) => {
     const {
@@ -40,9 +42,7 @@ const getAllStorys = asyncHandler(async (req, res) => {
             })
             .sort(sort)
             .limit(parseInt(limit))
-            .select('-createdAt -updatedAt -isEditable')
-            ;
-
+            .select("-createdAt -updatedAt -isEditable");
         // Fetch the total count of stories for pagination purposes
         const totalStories = await Story.countDocuments(filter);
 
@@ -367,10 +367,144 @@ const deleteStory = asyncHandler(async (req, res) => {
 
         const storyDeleted = await Story.findByIdAndDelete(storyId);
 
-        return res.status(200).json(ApiResponse(200, storyDeleted));
+        return res.status(200).json(new ApiResponse(200, storyDeleted));
     } catch (error) {
         throw new ApiError(500, "Something went wrong");
     }
+});
+
+const likeStory = asyncHandler(async (req, res) => {
+    const { storyId } = req.body;
+    if (!storyId) {
+        res.status(404);
+        throw new ApiError(404, "Story id not found");
+    }
+    const story = await Story.findById(storyId);
+    if (!story) {
+        res.status(404);
+        throw new ApiError(404, "Story not found");
+    }
+    const like = await Like.create({
+        likedStory: storyId,
+        likedUser: req.user._id,
+    });
+    if (!like) {
+        res.status(500);
+        throw new ApiError(500, "Could not like the story");
+    }
+
+    return res.status(200).json(new ApiResponse(200, like));
+});
+
+const commentStory = asyncHandler(async (req, res) => {
+    const { storyId, comment } = req.body;
+    if (!storyId || !comment) {
+        res.status(404);
+        throw new ApiError(404, "Story id and comment are requried");
+    }
+    const story = await Story.findById(storyId);
+    if (!story) {
+        res.status(404);
+        throw new ApiError(404, "Story not found");
+    }
+    const commentedStory = await Comment.create({
+        comment,
+        commentedStory: storyId,
+        commenter: req.user._id,
+    });
+    if (!commentedStory) {
+        res.status(500);
+        throw new ApiError(500, "Could not comment on the story");
+    }
+
+    return res.status(200).json(new ApiResponse(200, await commentedStory));
+});
+
+const getAllLikes = asyncHandler(async (req, res) => {
+    const { storyId } = req.params;
+
+    const likes = await Like.aggregate([
+        {
+            $match: { likedStory: new mongoose.Types.ObjectId(storyId) },
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "likedUser",
+                foreignField: "_id",
+                as: "likedUsers",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $facet: {
+                userDetails: [
+                    {
+                        $project: {
+                            likedUsers: 1,
+                        },
+                    },
+                ],
+                totalLikes: [
+                    {
+                        $count: "totalLikes ",
+                    },
+                ],
+            },
+        },
+    ]);
+    res.status(200).json(new ApiResponse(200, likes));
+});
+
+const getAllComments = asyncHandler(async (req, res) => {
+    const { storyId } = req.params;
+
+    const comments = await Comment.aggregate([
+        {
+            $match: { commentedStory: new mongoose.Types.ObjectId(storyId) },
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "commenter",
+                foreignField: "_id",
+                as: "commentedUsers",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $facet: {
+                userDetails: [
+                    {
+                        $project: {
+                            commentedUsers: 1,
+                            comment: 1,
+                        },
+                    },
+                ],
+                totalComments: [
+                    {
+                        $count: "totalComments",
+                    },
+                ],
+            },
+        },
+    ]);
+    res.status(200).json(new ApiResponse(200, comments));
 });
 
 export {
@@ -381,4 +515,8 @@ export {
     updateStoryTitle,
     updateStory,
     deleteStory,
+    likeStory,
+    commentStory,
+    getAllLikes,
+    getAllComments,
 };
