@@ -242,6 +242,7 @@ const updateUsername = asyncHandler(async (req, res) => {
             new ApiResponse(200, user, "Account details updated successfully")
         );
 });
+
 const updateEmail = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
