@@ -23,7 +23,7 @@ const storySchema = new Schema(
         avatar: {
             type: String,
         },
-        story:{
+        story: {
             type: String,
             required: true,
         },
@@ -32,16 +32,16 @@ const storySchema = new Schema(
             required: true,
             default: false,
         },
-        genre:{
-            type:String,
-            required:true,
-            trim: true
-        }
+        genre: {
+            type: String,
+            required: true,
+            trim: true,
+        },
     },
     {
         timestamps: true,
     }
 );
 
-storySchema.plugin(mongooseAggregatePaginate)
+storySchema.plugin(mongooseAggregatePaginate);
 export const Story = mongoose.model("Story", storySchema);
