@@ -29,8 +29,8 @@ router.put("/update-story/:storyId", verifyToken, updateStory);
 router.delete("/delete-story/:storyId", verifyToken, deleteStory);
 router.post("/comment", verifyToken, commentStory);
 router.post("/like", verifyToken, likeStory);
-router.get("/get-all-comments/:storyId", getAllComments);
-router.get("/get-all-like/:storyId", getAllLikes);
+router.post("/get-all-comments", getAllComments);
+router.post("/get-all-like", verifyToken, getAllLikes);
 // router.get('/toggle-PublishStatus',togglePublishStatus);
 
 export default router;
