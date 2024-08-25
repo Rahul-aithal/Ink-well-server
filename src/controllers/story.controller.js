@@ -375,6 +375,7 @@ const deleteStory = asyncHandler(async (req, res) => {
 
 const likeStory = asyncHandler(async (req, res) => {
     const { storyId } = req.body;
+
     if (!storyId) {
         res.status(404);
         throw new ApiError(404, "Story id not found");
@@ -384,6 +385,34 @@ const likeStory = asyncHandler(async (req, res) => {
         res.status(404);
         throw new ApiError(404, "Story not found");
     }
+
+    const hasUserLiked = await Like.aggregate([
+        {
+            $match: {
+                likedStory: new mongoose.Types.ObjectId(storyId),
+                likedUser: req.user._id,
+            },
+        },
+        {
+            $addFields: { hasLiked: true },
+        },
+        {
+            $project: { hasLiked: 1 },
+        },
+    ]);
+
+    if (hasUserLiked.length > 0) {
+        console.log(hasUserLiked);
+
+        const like = await Like.findOneAndDelete({
+            likedStory: storyId,
+            likedUser: req.user._id,
+        });
+        return res
+            .status(200)
+            .json(new ApiResponse(200, like, "Story unliked"));
+    }
+
     const like = await Like.create({
         likedStory: storyId,
         likedUser: req.user._id,
@@ -416,12 +445,15 @@ const commentStory = asyncHandler(async (req, res) => {
         res.status(500);
         throw new ApiError(500, "Could not comment on the story");
     }
-
-    return res.status(200).json(new ApiResponse(200, await commentedStory));
+    story.comments.push(commentedStory._id);
+    await story.save();
+    return res
+        .status(200)
+        .json(new ApiResponse(200, { commentedStory, story }));
 });
 
 const getAllLikes = asyncHandler(async (req, res) => {
-    const { storyId } = req.params;
+    const { storyId } = req.body;
 
     const likes = await Like.aggregate([
         {
@@ -460,11 +492,33 @@ const getAllLikes = asyncHandler(async (req, res) => {
             },
         },
     ]);
-    res.status(200).json(new ApiResponse(200, likes));
+
+    const hasUserLiked = await Like.aggregate([
+        {
+            $addFields: { hasLiked: false },
+        },
+        {
+            $match: {
+                likedStory: new mongoose.Types.ObjectId(storyId),
+                likedUser: req.user._id,
+            },
+        },
+        {
+            $addFields: {
+                hasLiked: true,
+            },
+        },
+        {
+            $project: {
+                hasLiked: 1,
+            },
+        },
+    ]);
+    res.status(200).json(new ApiResponse(200, { likes, hasUserLiked }));
 });
 
 const getAllComments = asyncHandler(async (req, res) => {
-    const { storyId } = req.params;
+    const { storyId } = req.body;
 
     const comments = await Comment.aggregate([
         {
@@ -507,6 +561,50 @@ const getAllComments = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, comments));
 });
 
+const editComments = asyncHandler(async (req, res) => {
+    const { comment, commentId } = req.body;
+    if (!commentId || !comment) {
+        res.status(404);
+        throw new ApiError(404, "Comment id and comment are requried");
+    }
+
+    const commentedStory = await Comment.findByIdAndUpdate(
+        commentId,
+        {
+            $set: {
+                comment,
+            },
+        },
+        { new: true }
+    );
+
+    if (!commentedStory) {
+        res.status(500);
+        throw new ApiError(500, "Could not comment on the story");
+    }
+
+    return res.status(200).json(new ApiResponse(200, await commentedStory));
+});
+
+const deleteComments = asyncHandler(async (req, res) => {
+    const { commentId } = req.body;
+    if (!commentId) {
+        res.status(404);
+        throw new ApiError(404, " comment id is requried");
+    }
+
+    const commentedStory = await Comment.findByIdAndDelete(commentId);
+
+    if (!commentedStory) {
+        res.status(500);
+        throw new ApiError(500, "Could not comment on the story");
+    }
+
+    return res.status(200).json(new ApiResponse(200, commentedStory));
+});
+
+
+
 export {
     getAllStorys,
     WriteStory,
@@ -519,4 +617,6 @@ export {
     commentStory,
     getAllLikes,
     getAllComments,
+    editComments,
+    deleteComments,
 };
