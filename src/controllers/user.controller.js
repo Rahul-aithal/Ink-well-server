@@ -1,4 +1,3 @@
-
 import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -26,7 +25,7 @@ const generateAccessAndRefereshTokens = async (userId) => {
     }
 };
 
-const signUp = asyncHandler(async (req, res, next) => {
+const signUp = asyncHandler(async (req, res) => {
     const { email, username, password } = req.body;
     console.log("email: ", email, typeof email);
 
@@ -63,7 +62,7 @@ const signUp = asyncHandler(async (req, res, next) => {
     );
 });
 
-const signIn = asyncHandler(async (req, res, next) => {
+const signIn = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     // console.log("email: ", email);
 
@@ -117,7 +116,7 @@ const signIn = asyncHandler(async (req, res, next) => {
         );
 });
 
-const signOut = asyncHandler(async (req, res, next) => {
+const signOut = asyncHandler(async (req, res) => {
     if (!req.user._id) throw new ApiError(500, "Error in tokens");
     await User.findByIdAndUpdate(
         req.user._id,
@@ -342,8 +341,15 @@ const getstoryHistory = asyncHandler(async (req, res) => {
             select: "username",
         },
     });
-    console.log("user history",user);
-    
+    const validStoryHistory = user.storyHistory.filter(
+        (story) => story && story._id
+    );
+
+    // Update the user document if invalid IDs are found
+    if (validStoryHistory.length !== user.storyHistory.length) {
+        user.storyHistory = validStoryHistory.map((story) => story._id);
+        await user.save();
+    }
     return res
         .status(200)
         .json(new ApiResponse(200, user, "Watch history fetched successfully"));
@@ -408,7 +414,7 @@ const getCommentHistory = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, comments));
 });
 
-const   getLikesHistory = asyncHandler(async (req, res) => {
+const getLikesHistory = asyncHandler(async (req, res) => {
     const likes = await Like.aggregate([
         {
             $match: { likedUser: req.user._id },
@@ -448,7 +454,6 @@ const   getLikesHistory = asyncHandler(async (req, res) => {
     ]);
     res.status(200).json(new ApiResponse(200, likes));
 });
-
 
 export {
     signIn,
