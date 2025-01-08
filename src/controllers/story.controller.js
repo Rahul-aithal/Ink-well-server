@@ -242,26 +242,10 @@ const updateStoryDescription = asyncHandler(async (req, res) => {
             },
             { new: true, runValidators: true } // Return the updated document and run validation
         ).populate("owners");
+        res.status(200).json(
+            new ApiResponse(200, { updatedStory })
+        );
 
-        if (updatedStory) {
-            try {
-                const user = await User.findByIdAndUpdate(
-                    req.user._id,
-                    {
-                        $set: {
-                            storyHistory: updatedStory._id,
-                        },
-                    },
-                    { new: true }
-                );
-                res.status(200).json(
-                    new ApiResponse(200, { updatedStory, user })
-                );
-            } catch (error) {
-                res.status(500);
-                throw new ApiError(500, error);
-            }
-        }
     } catch (error) {
         res.status(500);
         throw new ApiError(500, error);
@@ -282,8 +266,8 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
             throw new ApiError(404, "Story not found");
         }
         if (!story.isEditable) {
-            res.status(404);
-            throw new ApiError(404, "Story is not editable");
+            res.status(403);
+            throw new ApiError(403, "Story is not editable");
         }
         const isOwner = story.owners.some((ownerId) =>
             ownerId.equals(req.user._id)
@@ -301,25 +285,9 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
             { new: true, runValidators: true } // Return the updated document and run validation
         );
 
-        if (updatedStory) {
-            try {
-                const user = await User.findByIdAndUpdate(
-                    req.user._id,
-                    {
-                        $set: {
-                            storyHistory: updatedStory._id,
-                        },
-                    },
-                    { new: true }
-                );
-                res.status(200).json(
-                    new ApiResponse(200, { updatedStory, user })
-                );
-            } catch (error) {
-                res.status(500);
-                throw new ApiError(500, error);
-            }
-        }
+        res.status(200).json(
+            new ApiResponse(200, { updatedStory })
+        );
     } catch (error) {
         res.status(500);
         throw new ApiError(500, error?.message || error);
@@ -342,7 +310,7 @@ const deleteStory = asyncHandler(async (req, res) => {
         );
 
         if (!isOwner)
-            throw new ApiError(402, "You are not allowed to update this");
+            throw new ApiError(402, "You are not allowed to delete this");
 
         const storyDeleted = await Story.findByIdAndDelete(storyId);
 
