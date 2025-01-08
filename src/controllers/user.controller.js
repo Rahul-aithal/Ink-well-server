@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+
 import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -342,7 +342,8 @@ const getstoryHistory = asyncHandler(async (req, res) => {
             select: "username",
         },
     });
-
+    console.log("user history",user);
+    
     return res
         .status(200)
         .json(new ApiResponse(200, user, "Watch history fetched successfully"));

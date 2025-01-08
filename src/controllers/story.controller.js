@@ -105,13 +105,10 @@ const WriteStory = asyncHandler(async (req, res) => {
         try {
             const user = await User.findByIdAndUpdate(
                 req.user._id,
-                {
-                    $set: {
-                        storyHistory: newStory._id,
-                    },
-                },
+                { $addToSet: { storyHistory: newStory._id } },
                 { new: true }
             );
+
             const populatedStory = await Story.findById(newStory._id).populate(
                 "owners"
             );
@@ -346,6 +343,8 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
 
 const deleteStory = asyncHandler(async (req, res) => {
     const { storyId } = req.params;
+
+    
     //TODO: delete story
     try {
         if (!storyId) throw new ApiError(401, "id is required");
@@ -354,11 +353,7 @@ const deleteStory = asyncHandler(async (req, res) => {
             res.status(404);
             throw new ApiError(404, "Story not found");
         }
-        if (!story.isEditable) {
-            res.status(404);
-            throw new ApiError(404, "Story is not editable");
-        }
-        const isOwner = story.owners.some((ownerId) =>
+        const isOwner = await story.owners.some((ownerId) =>
             ownerId.equals(req.user._id)
         );
 
@@ -602,8 +597,6 @@ const deleteComments = asyncHandler(async (req, res) => {
 
     return res.status(200).json(new ApiResponse(200, commentedStory));
 });
-
-
 
 export {
     getAllStorys,
