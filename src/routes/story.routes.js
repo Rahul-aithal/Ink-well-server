@@ -9,15 +9,17 @@ import {
     likeStory,
     updateStory,
     updateStoryDescription,
+    updateStoryThumb,
     updateStoryTitle,
     WriteStory,
 } from "../controllers/story.controller.js";
 import { verifyToken } from "../middlewares/verifyJWT.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
 router.get("/get-all-story", getAllStorys);
-router.post("/write-story", verifyToken, WriteStory);
+router.post("/write-story", verifyToken,upload.single("image"), WriteStory);
 router.get("/get-story-by-id/:storyId", verifyToken, getstoryById);
 router.put("/update-story-title/:storyId", verifyToken, updateStoryTitle);
 router.put(
@@ -25,6 +27,7 @@ router.put(
     verifyToken,
     updateStoryDescription
 );
+router.put("/update-thumb/:storyId", verifyToken,upload.single("image") ,updateStoryThumb);
 router.put("/update-story/:storyId", verifyToken, updateStory);
 router.delete("/delete-story/:storyId", verifyToken, deleteStory);
 router.post("/comment", verifyToken, commentStory);

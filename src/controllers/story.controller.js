@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.models.js";
 import { Like } from "../models/like.models.js";
 import { Comment } from "../models/comment.models.js";
+import uploadCloudinaryResult, { getURL } from "../utils/Cloudinary.js";
 
 const getAllStorys = asyncHandler(async (req, res) => {
     const {
@@ -65,6 +66,11 @@ const WriteStory = asyncHandler(async (req, res) => {
         owners = "",
         isEditable = false,
     } = req.body;
+    const filePath = req.file.path;
+
+    const filePublicURL = filePath
+        ? await uploadCloudinaryResult(filePath)
+        : getURL("samples/tyanahyuokk3srada25e");
     if (!title || !description || !story || !genre) {
         throw new ApiError(400, "All fields are required");
     }
@@ -99,6 +105,7 @@ const WriteStory = asyncHandler(async (req, res) => {
     if (existedStory) {
         throw new ApiError(409, "Story with same title already exists");
     }
+
     const newStory = await Story.create({
         title,
         description,
@@ -106,6 +113,7 @@ const WriteStory = asyncHandler(async (req, res) => {
         story,
         owners: authorsId,
         isEditable,
+        avatar: filePublicURL,
     });
 
     // Retrieve the story with populated fields
@@ -161,6 +169,37 @@ const getstoryById = asyncHandler(async (req, res) => {
     } catch (error) {
         throw new ApiError(500, error.message);
     }
+});
+
+const updateStoryThumb = asyncHandler(async (req, res) => {
+    const { storyId } = req.params;
+    const filePath = req.file.path;
+    if (!filePath) {
+        throw new ApiError(404, "No file path found");
+    }
+
+    const story = await Story.findById(storyId);
+    if (!story) {
+        res.status(404);
+        throw new ApiError(404, "Story not found");
+    }
+    if (!story.isEditable) {
+        res.status(403);
+        throw new ApiError(403, "Story is not editable");
+    }
+    const isOwner = story.owners.some((ownerId) =>
+        ownerId.equals(req.user._id)
+    );
+
+    if (!isOwner) {
+        res.status(401);
+        throw new ApiError(401, "You are not allowed to update description");
+    }
+    const filePublicURL = await uploadCloudinaryResult(filePath);
+    story.avatar = filePublicURL;
+    await story.save();
+
+    res.status(200).json(new ApiResponse(200, { imageURL: story.avatar }));
 });
 
 const updateStory = asyncHandler(async (req, res) => {
@@ -242,10 +281,7 @@ const updateStoryDescription = asyncHandler(async (req, res) => {
             },
             { new: true, runValidators: true } // Return the updated document and run validation
         ).populate("owners");
-        res.status(200).json(
-            new ApiResponse(200, { updatedStory })
-        );
-
+        res.status(200).json(new ApiResponse(200, { updatedStory }));
     } catch (error) {
         res.status(500);
         throw new ApiError(500, error);
@@ -285,9 +321,7 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
             { new: true, runValidators: true } // Return the updated document and run validation
         );
 
-        res.status(200).json(
-            new ApiResponse(200, { updatedStory })
-        );
+        res.status(200).json(new ApiResponse(200, { updatedStory }));
     } catch (error) {
         res.status(500);
         throw new ApiError(500, error?.message || error);
@@ -564,4 +598,5 @@ export {
     getAllComments,
     editComments,
     deleteComments,
+    updateStoryThumb,
 };
