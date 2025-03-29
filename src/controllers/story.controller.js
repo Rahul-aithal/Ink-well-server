@@ -7,6 +7,7 @@ import { User } from "../models/user.models.js";
 import { Like } from "../models/like.models.js";
 import { Comment } from "../models/comment.models.js";
 import uploadCloudinaryResult, { getURL } from "../utils/Cloudinary.js";
+import axios from "axios";
 
 const getAllStorys = asyncHandler(async (req, res) => {
     const {
@@ -66,8 +67,9 @@ const WriteStory = asyncHandler(async (req, res) => {
         owners = "",
         isEditable = false,
     } = req.body;
-    const filePath = req.file.path;
-
+    const filePath = req.file?.path;
+    console.log(req.file);
+    
     const filePublicURL = filePath
         ? await uploadCloudinaryResult(filePath)
         : getURL("samples/tyanahyuokk3srada25e");
@@ -135,7 +137,15 @@ const WriteStory = asyncHandler(async (req, res) => {
                     "Something went wrong while creating story"
                 );
             }
-
+            // authorsId.forEach(async (id) => {
+            //     const user = await User.findById(id);
+            //     axios.post("http://localhost:4000/notify_use", {
+            //         username: user.username,
+            //         email: user.email,
+            //         userId: id,
+            //         message: `${populatedStory.title} has been created and you are the owner`,
+            //     });
+            // });
             res.status(201).json(
                 new ApiResponse(
                     200,
@@ -198,6 +208,8 @@ const updateStoryThumb = asyncHandler(async (req, res) => {
     const filePublicURL = await uploadCloudinaryResult(filePath);
     story.avatar = filePublicURL;
     await story.save();
+
+    // story.owners.forEach()
 
     res.status(200).json(new ApiResponse(200, { imageURL: story.avatar }));
 });
