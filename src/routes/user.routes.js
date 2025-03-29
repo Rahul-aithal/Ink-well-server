@@ -1,9 +1,11 @@
 import { Router } from "express";
 import {
     changeCurrentPassword,
+    deleteNotification,
     getCommentHistory,
     getCurrentUser,
     getLikesHistory,
+    getNotifications,
     getstoryHistory,
     refreshAccessToken,
     searchUserByUserName,
@@ -29,7 +31,8 @@ router.put("/update-email", verifyToken, updateEmail);
 router.get("/get-user", verifyToken, getCurrentUser);
 router.get("/get-user-history", verifyToken, getstoryHistory);
 router.get("/get-user-by-username", verifyToken, searchUserByUserName);
-router.get("/get-all-commented",verifyToken,getCommentHistory);
-router.get("/get-all-liked",verifyToken,getLikesHistory);
-
+router.get("/get-all-commented", verifyToken, getCommentHistory);
+router.get("/get-all-liked", verifyToken, getLikesHistory);
+router.get("/get-notification", verifyToken, getNotifications);
+router.delete("/delete-notification/:notificationId", verifyToken, deleteNotification);
 export default router;

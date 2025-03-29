@@ -69,7 +69,7 @@ const WriteStory = asyncHandler(async (req, res) => {
     } = req.body;
     const filePath = req.file?.path;
     console.log(req.file);
-    
+
     const filePublicURL = filePath
         ? await uploadCloudinaryResult(filePath)
         : getURL("samples/tyanahyuokk3srada25e");
@@ -137,15 +137,16 @@ const WriteStory = asyncHandler(async (req, res) => {
                     "Something went wrong while creating story"
                 );
             }
-            // authorsId.forEach(async (id) => {
-            //     const user = await User.findById(id);
-            //     axios.post("http://localhost:4000/notify_use", {
-            //         username: user.username,
-            //         email: user.email,
-            //         userId: id,
-            //         message: `${populatedStory.title} has been created and you are the owner`,
-            //     });
-            // });
+            authorsId.forEach(async (id) => {
+                const user = await User.findById(id);
+                await axios.post("http://localhost:4000/notify_user", {
+                    username: user.username,
+                    email: user.email,
+                    userId: id,
+                    message: `${populatedStory.title} has been created and you are the owner`,
+                    sentiment: "positive",
+                });
+            });
             res.status(201).json(
                 new ApiResponse(
                     200,
@@ -209,7 +210,16 @@ const updateStoryThumb = asyncHandler(async (req, res) => {
     story.avatar = filePublicURL;
     await story.save();
 
-    // story.owners.forEach()
+    story.owners.forEach(async (id) => {
+        const user = await User.findById(id);
+        await axios.post("http://localhost:4000/notify_user", {
+            username: user.username,
+            email: user.email,
+            userId: id,
+            message: `${populatedStory.title} thumbnail had been updated by ${req.user.username}`,
+            sentiment: "positive",
+        });
+    });
 
     res.status(200).json(new ApiResponse(200, { imageURL: story.avatar }));
 });
@@ -250,6 +260,19 @@ const updateStory = asyncHandler(async (req, res) => {
         },
         { new: true, runValidators: true } // Return the updated document and run validation
     );
+    if (!updatedStory) {
+        throw new ApiError(500, "Failed to update the story");
+    }
+    story.owners.forEach(async (id) => {
+        const user = await User.findById(id);
+        await axios.post("http://localhost:4000/notify_user", {
+            username: user.username,
+            email: user.email,
+            userId: id,
+            message: `${updatedStory.title} story had been updated by ${req.user.username}`,
+            sentiment: "positive",
+        });
+    });
 
     res.status(200).json(new ApiResponse(200, { updatedStory }));
 });
@@ -293,6 +316,16 @@ const updateStoryDescription = asyncHandler(async (req, res) => {
             },
             { new: true, runValidators: true } // Return the updated document and run validation
         ).populate("owners");
+        story.owners.forEach(async (id) => {
+            const user = await User.findById(id);
+            await axios.post("http://localhost:4000/notify_user", {
+                username: user.username,
+                email: user.email,
+                userId: id,
+                message: `${updatedStory.title} description had been updated by ${req.user.username}`,
+                sentiment: "positive",
+            });
+        });
         res.status(200).json(new ApiResponse(200, { updatedStory }));
     } catch (error) {
         res.status(500);
@@ -306,6 +339,8 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
     const { title } = req.body;
 
     try {
+        
+        
         // Find the story by ID and update the specified fields
         if (!title) throw new ApiError(400, "either of fields requiered");
         const story = await Story.findById(storyId);
@@ -332,7 +367,19 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
             },
             { new: true, runValidators: true } // Return the updated document and run validation
         );
-
+        console.log(story.owners);
+        
+        story.owners.forEach(async (id) => {
+            const user = await User.findById(id);
+            const res = await axios.post("http://localhost:4000/notify_user", {
+                username: user.username,
+                email: user.email,
+                userId: id,
+                message: `${story.title} title  had been updated to ${updatedStory.title} by ${req.user.username}`,
+                sentiment: "positive",
+            });
+      
+        });
         res.status(200).json(new ApiResponse(200, { updatedStory }));
     } catch (error) {
         res.status(500);
@@ -359,7 +406,16 @@ const deleteStory = asyncHandler(async (req, res) => {
             throw new ApiError(402, "You are not allowed to delete this");
 
         const storyDeleted = await Story.findByIdAndDelete(storyId);
-
+        story.owners.forEach(async (id) => {
+            const user = await User.findById(id);
+            await axios.post("http://localhost:4000/notify_user", {
+                username: user.username,
+                email: user.email,
+                userId: id,
+                message: `${story.title} title  had been deleted by ${req.user.username}`,
+                sentiment: "negative",
+            });
+        });
         return res.status(200).json(new ApiResponse(200, storyDeleted));
     } catch (error) {
         throw new ApiError(500, "Something went wrong");

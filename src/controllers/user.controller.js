@@ -5,6 +5,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import { Comment } from "../models/comment.models.js";
 import { Like } from "../models/like.models.js";
+import Notification from "../models/notification.model.js";
+import mongoose from "mongoose";
 
 const generateAccessAndRefereshTokens = async (userId) => {
     try {
@@ -47,7 +49,7 @@ const signUp = asyncHandler(async (req, res) => {
     });
 
     const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken"
+        "-password -refreshToken __v"
     );
 
     if (!createdUser) {
@@ -56,6 +58,14 @@ const signUp = asyncHandler(async (req, res) => {
             "Something went wrong while signing in the user"
         );
     }
+
+    axios.post("http://localhost:4000/notify_userr", {
+        username: createdUser.username,
+        email: createdUser.email,
+        userId: createdUser._id,
+        message: `New user registered with username ${createdUser.username}`,
+        sentiment: "positive",
+    });
 
     res.status(201).json(
         new ApiResponse(200, createdUser, "User registered Successfully")
@@ -209,6 +219,14 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     user.password = newPassword;
     await user.save({ validateBeforeSave: false });
 
+    axios.post("http://localhost:4000/notify_userr", {
+        username: user.username,
+        email: user.email,
+        userId: id,
+        message: `Password have been changed`,
+        sentiment: "negative",
+    });
+
     return res
         .status(200)
         .json(new ApiResponse(200, {}, "Password changed successfully"));
@@ -236,6 +254,13 @@ const updateUsername = asyncHandler(async (req, res) => {
         },
         { new: true }
     ).select("-password");
+    axios.post("http://localhost:4000/notify_userr", {
+        username: req.user.username,
+        email: user.email,
+        userId: id,
+        message: `Username have been changed to ${user.username}`,
+        sentiment: "negative",
+    });
 
     return res
         .status(200)
@@ -260,6 +285,20 @@ const updateEmail = asyncHandler(async (req, res) => {
         },
         { new: true }
     ).select("-password");
+    axios.post("http://localhost:4000/notify_userr", {
+        username: user.username,
+        email: req.user.email,
+        userId: id,
+        message: `Email have been updated from ${req.user.emai} to ${user.email} have been changed`,
+        sentiment: "negative",
+    });
+    axios.post("http://localhost:4000/notify_userr", {
+        username: user.username,
+        email: user.email,
+        userId: id,
+        message: `Email have been updated from ${req.user.emai} to ${user.email} have been changed`,
+        sentiment: "negative",
+    });
 
     return res
         .status(200)
@@ -455,6 +494,58 @@ const getLikesHistory = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, likes));
 });
 
+const getNotifications = asyncHandler(async (req, res) => {
+    console.log(req.user._id);
+    
+    const notifications = await Notification.aggregate([
+        {
+            $match: {
+                userId: req.user._id,
+            },
+        },
+        {
+            $sort: {
+                createdAt: -1,
+            },
+        },
+        {
+            $limit: 3,
+        },
+    ]);
+
+    if (notifications === undefined) {
+        throw new ApiError(500, "notificaton is undifiend");
+    }
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                notifications,
+                "Watch history fetched successfully"
+            )
+        );
+});
+
+const deleteNotification = asyncHandler(async (req, res) => {
+    const { notificationId } = req.params;
+
+    //TODO: delete story
+    try {
+        if (!notificationId) throw new ApiError(401, "id is required");
+        const notification =
+            await Notification.findByIdAndDelete(notificationId);
+        if (!notification) {
+            res.status(404);
+            throw new ApiError(404, "Notification not found");
+        }
+
+        return res.status(200).json(new ApiResponse(200, notification.message));
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong");
+    }
+});
+
 export {
     signIn,
     signUp,
@@ -469,4 +560,6 @@ export {
     searchUserByUserName,
     getCommentHistory,
     getLikesHistory,
+    getNotifications,
+    deleteNotification,
 };
