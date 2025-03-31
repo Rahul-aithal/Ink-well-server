@@ -8,6 +8,7 @@ import { Like } from "../models/like.models.js";
 import { Comment } from "../models/comment.models.js";
 import uploadCloudinaryResult, { getURL } from "../utils/Cloudinary.js";
 import axios from "axios";
+import { NOTIFY_URL } from "../constants.js";
 
 const getAllStorys = asyncHandler(async (req, res) => {
     const {
@@ -139,7 +140,7 @@ const WriteStory = asyncHandler(async (req, res) => {
             }
             authorsId.forEach(async (id) => {
                 const user = await User.findById(id);
-                await axios.post("http://localhost:4000/notify_user", {
+                await axios.post(`${NOTIFY_URL}/notify_user`, {
                     username: user.username,
                     email: user.email,
                     userId: id,
@@ -212,7 +213,7 @@ const updateStoryThumb = asyncHandler(async (req, res) => {
 
     story.owners.forEach(async (id) => {
         const user = await User.findById(id);
-        await axios.post("http://localhost:4000/notify_user", {
+        await axios.post(`${NOTIFY_URL}/notify_user`, {
             username: user.username,
             email: user.email,
             userId: id,
@@ -265,7 +266,7 @@ const updateStory = asyncHandler(async (req, res) => {
     }
     story.owners.forEach(async (id) => {
         const user = await User.findById(id);
-        await axios.post("http://localhost:4000/notify_user", {
+        await axios.post(`${NOTIFY_URL}/notify_user`, {
             username: user.username,
             email: user.email,
             userId: id,
@@ -318,7 +319,7 @@ const updateStoryDescription = asyncHandler(async (req, res) => {
         ).populate("owners");
         story.owners.forEach(async (id) => {
             const user = await User.findById(id);
-            await axios.post("http://localhost:4000/notify_user", {
+            await axios.post(`${NOTIFY_URL}/notify_user`, {
                 username: user.username,
                 email: user.email,
                 userId: id,
@@ -371,7 +372,7 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
         
         story.owners.forEach(async (id) => {
             const user = await User.findById(id);
-            const res = await axios.post("http://localhost:4000/notify_user", {
+            const res = await axios.post(`${NOTIFY_URL}/notify_user`, {
                 username: user.username,
                 email: user.email,
                 userId: id,
@@ -408,7 +409,7 @@ const deleteStory = asyncHandler(async (req, res) => {
         const storyDeleted = await Story.findByIdAndDelete(storyId);
         story.owners.forEach(async (id) => {
             const user = await User.findById(id);
-            await axios.post("http://localhost:4000/notify_user", {
+            await axios.post(`${NOTIFY_URL}/notify_user`, {
                 username: user.username,
                 email: user.email,
                 userId: id,

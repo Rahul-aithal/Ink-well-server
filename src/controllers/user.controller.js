@@ -59,7 +59,7 @@ const signUp = asyncHandler(async (req, res) => {
         );
     }
 
-    axios.post("http://localhost:4000/notify_userr", {
+    axios.post(`${NOTIFY_URL}/notify_user`, {
         username: createdUser.username,
         email: createdUser.email,
         userId: createdUser._id,
@@ -219,7 +219,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     user.password = newPassword;
     await user.save({ validateBeforeSave: false });
 
-    axios.post("http://localhost:4000/notify_userr", {
+    axios.post(`${NOTIFY_URL}/notify_user`, {
         username: user.username,
         email: user.email,
         userId: id,
@@ -254,7 +254,7 @@ const updateUsername = asyncHandler(async (req, res) => {
         },
         { new: true }
     ).select("-password");
-    axios.post("http://localhost:4000/notify_userr", {
+    axios.post(`${NOTIFY_URL}/notify_user`, {
         username: req.user.username,
         email: user.email,
         userId: id,
@@ -285,14 +285,14 @@ const updateEmail = asyncHandler(async (req, res) => {
         },
         { new: true }
     ).select("-password");
-    axios.post("http://localhost:4000/notify_userr", {
+    axios.post(`${NOTIFY_URL}/notify_user`, {
         username: user.username,
         email: req.user.email,
         userId: id,
         message: `Email have been updated from ${req.user.emai} to ${user.email} have been changed`,
         sentiment: "negative",
     });
-    axios.post("http://localhost:4000/notify_userr", {
+    axios.post(`${NOTIFY_URL}/notify_user`, {
         username: user.username,
         email: user.email,
         userId: id,

@@ -18,6 +18,13 @@ app.use(cookieParser());
 
 //Routes
 
+app.get("/api/healthcheck", (req, res) => {
+    res.status(200).json({
+        status: "success",
+        message: "Server is running"
+    });
+});
+
 import userRouter from "./routes/user.routes.js";
 import storyRouter from "./routes/story.routes.js";
 
