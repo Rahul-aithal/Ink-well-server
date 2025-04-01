@@ -1,4 +1,5 @@
 /**
+ * @function getAllStorys
  * @description Controller to get all stories with search and filtering capabilities
  * @route GET /api/v1/stories
  * @param {Object} req.query
@@ -13,6 +14,7 @@
  */
 
 /**
+ * @function WriteStory
  * @description Controller to create a new story
  * @route POST /api/v1/stories
  * @param {Object} req.body
@@ -28,6 +30,7 @@
  */
 
 /**
+ * @function getstoryById
  * @description Controller to get a story by its ID
  * @route GET /api/v1/stories/:storyId
  * @param {string} req.params.storyId - Story ID
@@ -36,6 +39,7 @@
  */
 
 /**
+ * @function updateStoryThumb
  * @description Controller to update story thumbnail
  * @route PATCH /api/v1/stories/:storyId/thumbnail
  * @param {string} req.params.storyId - Story ID
@@ -45,6 +49,7 @@
  */
 
 /**
+ * @function updateStory
  * @description Controller to update story content
  * @route PATCH /api/v1/stories/:storyId
  * @param {string} req.params.storyId - Story ID
@@ -54,6 +59,7 @@
  */
 
 /**
+ * @function updateStoryDescription
  * @description Controller to update story description
  * @route PATCH /api/v1/stories/:storyId/description
  * @param {string} req.params.storyId - Story ID
@@ -63,6 +69,7 @@
  */
 
 /**
+ * @function updateStoryTitle
  * @description Controller to update story title
  * @route PATCH /api/v1/stories/:storyId/title
  * @param {string} req.params.storyId - Story ID
@@ -72,6 +79,7 @@
  */
 
 /**
+ * @function deleteStory
  * @description Controller to delete a story
  * @route DELETE /api/v1/stories/:storyId
  * @param {string} req.params.storyId - Story ID
@@ -80,6 +88,7 @@
  */
 
 /**
+ * @function likeStory
  * @description Controller to like/unlike a story
  * @route POST /api/v1/stories/like
  * @param {string} req.body.storyId - Story ID
@@ -88,6 +97,7 @@
  */
 
 /**
+ * @function commentStory
  * @description Controller to add a comment to a story
  * @route POST /api/v1/stories/comment
  * @param {Object} req.body
@@ -98,6 +108,7 @@
  */
 
 /**
+ * @function getAllLikes
  * @description Controller to get all likes for a story
  * @route GET /api/v1/stories/likes
  * @param {string} req.body.storyId - Story ID
@@ -105,6 +116,7 @@
  */
 
 /**
+ * @function getAllComments
  * @description Controller to get all comments for a story
  * @route GET /api/v1/stories/comments
  * @param {string} req.body.storyId - Story ID
@@ -112,6 +124,7 @@
  */
 
 /**
+ * @function editComments
  * @description Controller to edit a comment
  * @route PATCH /api/v1/stories/comments
  * @param {Object} req.body
@@ -122,6 +135,7 @@
  */
 
 /**
+ * @function deleteComments
  * @description Controller to delete a comment
  * @route DELETE /api/v1/stories/comments
  * @param {string} req.body.commentId - Comment ID
