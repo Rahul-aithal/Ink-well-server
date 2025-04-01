@@ -1,3 +1,171 @@
+/**
+ * @module UserController
+ */
+
+/**
+ * Generates access and refresh tokens for a user
+ * @async
+ * @param {string} userId - The ID of the user
+ * @returns {Promise<{accessToken: string, refreshToken: string}>} Object containing access and refresh tokens
+ * @throws {ApiError} If token generation fails
+ */
+
+/**
+ * Handles user registration
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.email - User's email address
+ * @param {string} req.body.username - Desired username
+ * @param {string} req.body.password - User's password
+ * @returns {Promise<ApiResponse>} Response with created user data
+ * @throws {ApiError} If registration fails
+ */
+
+/**
+ * Handles user sign in
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.email - User's email address
+ * @param {string} req.body.password - User's password
+ * @returns {Promise<ApiResponse>} Response with user data and tokens
+ * @throws {ApiError} If authentication fails
+ */
+
+/**
+ * Handles user sign out
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object from middleware
+ * @param {string} req.user._id - User's ID
+ * @returns {Promise<ApiResponse>} Response confirming sign out
+ * @throws {ApiError} If sign out fails
+ */
+
+/**
+ * Refreshes access token using refresh token
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.cookies - Request cookies
+ * @param {string} req.cookies.refreshToken - Refresh token from cookies
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.refreshToken - Optional refresh token in body
+ * @returns {Promise<ApiResponse>} Response with new access and refresh tokens
+ * @throws {ApiError} If token refresh fails
+ */
+
+/**
+ * Changes user's current password
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.oldPassword - Current password
+ * @param {string} req.body.newPassword - New password
+ * @returns {Promise<ApiResponse>} Response confirming password change
+ * @throws {ApiError} If password change fails
+ */
+
+/**
+ * Gets current user's information
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object from middleware
+ * @returns {Promise<ApiResponse>} Response with user data
+ */
+
+/**
+ * Updates username
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.username - New username
+ * @returns {Promise<ApiResponse>} Response with updated user data
+ * @throws {ApiError} If update fails
+ */
+
+/**
+ * Updates email
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.email - New email address
+ * @returns {Promise<ApiResponse>} Response with updated user data
+ * @throws {ApiError} If update fails
+ */
+
+/**
+ * Gets author profile information
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.params - Request parameters
+ * @param {string} req.params.username - Username to fetch profile for
+ * @param {Object} req.user - Authenticated user object for following status
+ * @returns {Promise<ApiResponse>} Response with author profile data
+ * @throws {ApiError} If profile fetch fails
+ */
+
+/**
+ * Gets user's story history
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object
+ * @param {string} req.user._id - User's ID
+ * @returns {Promise<ApiResponse>} Response with story history
+ */
+
+/**
+ * Searches users by username
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.query - Query parameters
+ * @param {string} req.query.username - Username to search for
+ * @returns {Promise<ApiResponse>} Response with search results
+ * @throws {ApiError} If search fails
+ */
+
+/**
+ * Gets user's comment history
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object
+ * @param {string} req.user._id - User's ID
+ * @returns {Promise<ApiResponse>} Response with comment history
+ */
+
+/**
+ * Gets user's likes history
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object
+ * @param {string} req.user._id - User's ID
+ * @returns {Promise<ApiResponse>} Response with likes history
+ */
+
+/**
+ * Gets user notifications
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object
+ * @param {string} req.user._id - User's ID
+ * @returns {Promise<ApiResponse>} Response with notifications
+ * @throws {ApiError} If notification fetch fails
+ */
+
+/**
+ * Deletes a notification
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.params - Request parameters
+ * @param {string} req.params.notificationId - ID of notification to delete
+ * @returns {Promise<ApiResponse>} Response confirming deletion
+ * @throws {ApiError} If deletion fails
+ */
+
+
 import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -7,6 +175,8 @@ import { Comment } from "../models/comment.models.js";
 import { Like } from "../models/like.models.js";
 import Notification from "../models/notification.model.js";
 import mongoose from "mongoose";
+import axios from "axios";
+import { NOTIFY_URL } from "../constants.js";
 
 const generateAccessAndRefereshTokens = async (userId) => {
     try {
@@ -49,7 +219,7 @@ const signUp = asyncHandler(async (req, res) => {
     });
 
     const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken __v"
+        "-password -refreshToken -__v -updatedAt -createdAt"
     );
 
     if (!createdUser) {
@@ -59,7 +229,7 @@ const signUp = asyncHandler(async (req, res) => {
         );
     }
 
-    axios.post(`${NOTIFY_URL}/notify_user`, {
+    await axios.post(`${NOTIFY_URL}/notify_user`, {
         username: createdUser.username,
         email: createdUser.email,
         userId: createdUser._id,
@@ -99,7 +269,7 @@ const signIn = asyncHandler(async (req, res) => {
     );
 
     const loggedInUser = await User.findById(user._id).select(
-        "-password -refreshToken"
+        "-password -refreshToken -__v -updatedAt -createdAt -storyHistory"
     );
 
     const options = {
@@ -169,7 +339,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             process.env.REFRESH_TOKEN_SECRET
         );
 
-        const user = await User.findById(decodedToken?._id);
+        const user = await User.findById(decodedToken?._id).select("_id refreshToken");
 
         if (!user) {
             throw new ApiError(401, "Invalid refresh token");
@@ -209,7 +379,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body;
 
-    const user = await User.findById(req.user?._id);
+    const user = await User.findById(req.user?._id).select("_id");
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
     if (!isPasswordCorrect) {
@@ -253,11 +423,11 @@ const updateUsername = asyncHandler(async (req, res) => {
             },
         },
         { new: true }
-    ).select("-password");
+    ).select("_id");
     axios.post(`${NOTIFY_URL}/notify_user`, {
         username: req.user.username,
         email: user.email,
-        userId: id,
+        userId: req.user._id,
         message: `Username have been changed to ${user.username}`,
         sentiment: "negative",
     });
@@ -284,7 +454,7 @@ const updateEmail = asyncHandler(async (req, res) => {
             },
         },
         { new: true }
-    ).select("-password");
+    ).select("_id");
     axios.post(`${NOTIFY_URL}/notify_user`, {
         username: user.username,
         email: req.user.email,
@@ -401,7 +571,7 @@ const searchUserByUserName = asyncHandler(async (req, res) => {
 
     const resultsOfUser = await User.find({
         username: new RegExp(username, "i"),
-    }).select("username id");
+    }).select("username _id");
 
     if (resultsOfUser.length === 0) {
         // If no results are found, return an empty array with a 200 status
@@ -496,7 +666,7 @@ const getLikesHistory = asyncHandler(async (req, res) => {
 
 const getNotifications = asyncHandler(async (req, res) => {
     console.log(req.user._id);
-    
+
     const notifications = await Notification.aggregate([
         {
             $match: {
@@ -510,6 +680,12 @@ const getNotifications = asyncHandler(async (req, res) => {
         },
         {
             $limit: 3,
+        },
+        {
+            $project: {
+                _id: 1,
+                message: 1,
+            },
         },
     ]);
 

@@ -18,22 +18,25 @@ import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
+// GET routes
 router.get("/get-all-story", getAllStorys);
-router.post("/write-story", verifyToken,upload.single("image"), WriteStory);
 router.get("/get-story-by-id/:storyId", verifyToken, getstoryById);
-router.put("/update-story-title/:storyId", verifyToken, updateStoryTitle);
-router.put(
-    "/update-story-description/:storyId",
-    verifyToken,
-    updateStoryDescription
-);
-router.put("/update-thumb/:storyId", verifyToken,upload.single("image") ,updateStoryThumb);
-router.put("/update-story/:storyId", verifyToken, updateStory);
-router.delete("/delete-story/:storyId", verifyToken, deleteStory);
+// router.get('/toggle-PublishStatus', togglePublishStatus);
+
+// POST routes
+router.post("/write-story", verifyToken, upload.single("image"), WriteStory);
 router.post("/comment", verifyToken, commentStory);
 router.post("/like", verifyToken, likeStory);
 router.post("/get-all-comments", getAllComments);
 router.post("/get-all-like", verifyToken, getAllLikes);
-// router.get('/toggle-PublishStatus',togglePublishStatus);
+
+// PUT routes
+router.put("/update-story-title/:storyId", verifyToken, updateStoryTitle);
+router.put("/update-story-description/:storyId", verifyToken, updateStoryDescription);
+router.put("/update-thumb/:storyId", verifyToken, upload.single("image"), updateStoryThumb);
+router.put("/update-story/:storyId", verifyToken, updateStory);
+
+// DELETE routes
+router.delete("/delete-story/:storyId", verifyToken, deleteStory);
 
 export default router;

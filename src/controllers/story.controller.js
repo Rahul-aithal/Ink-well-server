@@ -1,3 +1,135 @@
+/**
+ * @description Controller to get all stories with search and filtering capabilities
+ * @route GET /api/v1/stories
+ * @param {Object} req.query
+ * @param {number} [req.query.limit=10] - Number of stories to return per page
+ * @param {string} req.query.search - Search term for story titles
+ * @param {string} [req.query.sortBy="title"] - Field to sort by
+ * @param {string} req.query.sortType - Sort order ('asc' or 'desc')
+ * @param {string} req.query.username - Filter stories by username
+ * @param {boolean} [req.query.story=false] - Include story content in response
+ * @returns {Promise<ApiResponse>} Stories array and total count
+ * @throws {ApiError} If search parameter is missing
+ */
+
+/**
+ * @description Controller to create a new story
+ * @route POST /api/v1/stories
+ * @param {Object} req.body
+ * @param {string} req.body.title - Story title
+ * @param {string} [req.body.description=""] - Story description
+ * @param {string} req.body.story - Story content
+ * @param {string} req.body.genre - Story genre
+ * @param {string} [req.body.owners=""] - Comma-separated list of co-authors
+ * @param {boolean} [req.body.isEditable=false] - Whether story can be edited
+ * @param {File} req.file - Story thumbnail image
+ * @returns {Promise<ApiResponse>} Created story and updated user details
+ * @throws {ApiError} If required fields are missing or story title already exists
+ */
+
+/**
+ * @description Controller to get a story by its ID
+ * @route GET /api/v1/stories/:storyId
+ * @param {string} req.params.storyId - Story ID
+ * @returns {Promise<ApiResponse>} Story details
+ * @throws {ApiError} If story ID is invalid or story not found
+ */
+
+/**
+ * @description Controller to update story thumbnail
+ * @route PATCH /api/v1/stories/:storyId/thumbnail
+ * @param {string} req.params.storyId - Story ID
+ * @param {File} req.file - New thumbnail image
+ * @returns {Promise<ApiResponse>} Updated image URL
+ * @throws {ApiError} If file missing, story not found, or unauthorized
+ */
+
+/**
+ * @description Controller to update story content
+ * @route PATCH /api/v1/stories/:storyId
+ * @param {string} req.params.storyId - Story ID
+ * @param {string} req.body.newStory - Updated story content
+ * @returns {Promise<ApiResponse>} Updated story details
+ * @throws {ApiError} If story not found, not editable, or unauthorized
+ */
+
+/**
+ * @description Controller to update story description
+ * @route PATCH /api/v1/stories/:storyId/description
+ * @param {string} req.params.storyId - Story ID
+ * @param {string} req.body.description - New description
+ * @returns {Promise<ApiResponse>} Updated story details
+ * @throws {ApiError} If description missing, story not found, or unauthorized
+ */
+
+/**
+ * @description Controller to update story title
+ * @route PATCH /api/v1/stories/:storyId/title
+ * @param {string} req.params.storyId - Story ID
+ * @param {string} req.body.title - New title
+ * @returns {Promise<ApiResponse>} Updated story details
+ * @throws {ApiError} If title missing, story not found, or unauthorized
+ */
+
+/**
+ * @description Controller to delete a story
+ * @route DELETE /api/v1/stories/:storyId
+ * @param {string} req.params.storyId - Story ID
+ * @returns {Promise<ApiResponse>} Deleted story details
+ * @throws {ApiError} If story not found or unauthorized
+ */
+
+/**
+ * @description Controller to like/unlike a story
+ * @route POST /api/v1/stories/like
+ * @param {string} req.body.storyId - Story ID
+ * @returns {Promise<ApiResponse>} Like details or unlike confirmation
+ * @throws {ApiError} If story not found or operation fails
+ */
+
+/**
+ * @description Controller to add a comment to a story
+ * @route POST /api/v1/stories/comment
+ * @param {Object} req.body
+ * @param {string} req.body.storyId - Story ID
+ * @param {string} req.body.comment - Comment text
+ * @returns {Promise<ApiResponse>} Comment details and updated story
+ * @throws {ApiError} If story not found or comment fails
+ */
+
+/**
+ * @description Controller to get all likes for a story
+ * @route GET /api/v1/stories/likes
+ * @param {string} req.body.storyId - Story ID
+ * @returns {Promise<ApiResponse>} Likes details and total count
+ */
+
+/**
+ * @description Controller to get all comments for a story
+ * @route GET /api/v1/stories/comments
+ * @param {string} req.body.storyId - Story ID
+ * @returns {Promise<ApiResponse>} Comments details and total count
+ */
+
+/**
+ * @description Controller to edit a comment
+ * @route PATCH /api/v1/stories/comments
+ * @param {Object} req.body
+ * @param {string} req.body.commentId - Comment ID
+ * @param {string} req.body.comment - Updated comment text
+ * @returns {Promise<ApiResponse>} Updated comment details
+ * @throws {ApiError} If comment not found or update fails
+ */
+
+/**
+ * @description Controller to delete a comment
+ * @route DELETE /api/v1/stories/comments
+ * @param {string} req.body.commentId - Comment ID
+ * @returns {Promise<ApiResponse>} Deleted comment details
+ * @throws {ApiError} If comment not found or deletion fails
+ */
+
+
 import mongoose from "mongoose";
 import { Story } from "../models/stroy.models.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -17,6 +149,7 @@ const getAllStorys = asyncHandler(async (req, res) => {
         sortBy = "title",
         sortType,
         username,
+        story = false,
     } = req.query;
 
     //TODO: get all storys based on search, sort
@@ -45,7 +178,9 @@ const getAllStorys = asyncHandler(async (req, res) => {
             })
             .sort(sort)
             .limit(parseInt(limit))
-            .select("-createdAt -updatedAt -isEditable");
+            .select(
+                `-createdAt -updatedAt -isEditable ${!story ? "-story" : ""} -__v`
+            );
         // Fetch the total count of stories for pagination purposes
         const totalStories = await Story.countDocuments(filter);
 
@@ -128,9 +263,9 @@ const WriteStory = asyncHandler(async (req, res) => {
                 { new: true }
             );
 
-            const populatedStory = await Story.findById(newStory._id).populate(
-                "owners"
-            );
+            const populatedStory = await Story.findById(newStory._id)
+                .populate("owners")
+                .select("-__v -isEditable -createdAt -updatedAt ");
 
             if (!populatedStory) {
                 throw new ApiError(
@@ -170,7 +305,9 @@ const getstoryById = asyncHandler(async (req, res) => {
     }
     try {
         // Find the story by its ID and populate the 'owners' field
-        const story = await Story.findById(storyId);
+        const story = await Story.findById(storyId).select(
+            "-__v  -createdAt -updatedAt "
+        );
 
         if (!story) {
             res.status(404);
@@ -190,7 +327,7 @@ const updateStoryThumb = asyncHandler(async (req, res) => {
         throw new ApiError(404, "No file path found");
     }
 
-    const story = await Story.findById(storyId);
+    const story = await Story.findById(storyId).select("id isEditable owners");
     if (!story) {
         res.status(404);
         throw new ApiError(404, "Story not found");
@@ -233,7 +370,7 @@ const updateStory = asyncHandler(async (req, res) => {
     // Find the story by ID and update the specified fields
     if (!newStory) throw new ApiError(400, "newStory all fields requiered");
 
-    const story = await Story.findById(storyId);
+    const story = await Story.findById(storyId).select("id isEditable owners");
     console.log({ story });
 
     if (!story) {
@@ -260,7 +397,7 @@ const updateStory = asyncHandler(async (req, res) => {
             },
         },
         { new: true, runValidators: true } // Return the updated document and run validation
-    );
+    ).select("-__v  -createdAt -updatedAt ");
     if (!updatedStory) {
         throw new ApiError(500, "Failed to update the story");
     }
@@ -288,7 +425,7 @@ const updateStoryDescription = asyncHandler(async (req, res) => {
         if (!description)
             throw new ApiError(400, "description of fields requiered");
 
-        const story = await Story.findById(storyId);
+        const story = await Story.findById(storyId).select("id isEditable owners");
 
         if (!story) {
             res.status(404);
@@ -340,11 +477,9 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
     const { title } = req.body;
 
     try {
-        
-        
         // Find the story by ID and update the specified fields
         if (!title) throw new ApiError(400, "either of fields requiered");
-        const story = await Story.findById(storyId);
+        const story = await Story.findById(storyId).select("id isEditable owners");
         if (!story) {
             res.status(404);
             throw new ApiError(404, "Story not found");
@@ -369,7 +504,7 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
             { new: true, runValidators: true } // Return the updated document and run validation
         );
         console.log(story.owners);
-        
+
         story.owners.forEach(async (id) => {
             const user = await User.findById(id);
             const res = await axios.post(`${NOTIFY_URL}/notify_user`, {
@@ -379,7 +514,6 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
                 message: `${story.title} title  had been updated to ${updatedStory.title} by ${req.user.username}`,
                 sentiment: "positive",
             });
-      
         });
         res.status(200).json(new ApiResponse(200, { updatedStory }));
     } catch (error) {
@@ -394,7 +528,7 @@ const deleteStory = asyncHandler(async (req, res) => {
     //TODO: delete story
     try {
         if (!storyId) throw new ApiError(401, "id is required");
-        const story = await Story.findById(storyId);
+        const story = await Story.findById(storyId).select("id isEditable owners");
         if (!story) {
             res.status(404);
             throw new ApiError(404, "Story not found");
@@ -430,7 +564,7 @@ const likeStory = asyncHandler(async (req, res) => {
         res.status(404);
         throw new ApiError(404, "Story id not found");
     }
-    const story = await Story.findById(storyId);
+    const story = await Story.findById(storyId).select("id isEditable owners");
     if (!story) {
         res.status(404);
         throw new ApiError(404, "Story not found");
@@ -481,7 +615,7 @@ const commentStory = asyncHandler(async (req, res) => {
         res.status(404);
         throw new ApiError(404, "Story id and comment are requried");
     }
-    const story = await Story.findById(storyId);
+    const story = await Story.findById(storyId).select("id isEditable owners");
     if (!story) {
         res.status(404);
         throw new ApiError(404, "Story not found");
@@ -549,7 +683,7 @@ const getAllLikes = asyncHandler(async (req, res) => {
         },
         {
             $match: {
-                likedStory: new mongoose.Types.ObjectId(storyId),
+                likedStory: new mongoose.Types.ObjectId(String(storyId)),
                 likedUser: req.user._id,
             },
         },
