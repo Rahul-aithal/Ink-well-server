@@ -143,7 +143,6 @@
  * @throws {ApiError} If comment not found or deletion fails
  */
 
-
 import mongoose from "mongoose";
 import { Story } from "../models/stroy.models.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -217,8 +216,8 @@ const WriteStory = asyncHandler(async (req, res) => {
         owners = "",
         isEditable = false,
     } = req.body;
+
     const filePath = req.file?.path;
-    console.log(req.file);
 
     const filePublicURL = filePath
         ? await uploadCloudinaryResult(filePath)
@@ -227,8 +226,7 @@ const WriteStory = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required");
     }
     let authors = owners.toString().split(",");
-    // console.log(authors);
-    let authorsId;
+    let authorsId = [];
 
     if (authors.length > 1) {
         try {
@@ -248,8 +246,10 @@ const WriteStory = asyncHandler(async (req, res) => {
             throw new ApiError(500, error?.message || error);
         }
     } else {
-        authorsId = req.user._id;
+        authorsId.push(req.user._id);
     }
+    
+
     const existedStory = await Story.findOne({
         title,
     });
@@ -439,7 +439,9 @@ const updateStoryDescription = asyncHandler(async (req, res) => {
         if (!description)
             throw new ApiError(400, "description of fields requiered");
 
-        const story = await Story.findById(storyId).select("id isEditable owners");
+        const story = await Story.findById(storyId).select(
+            "id isEditable owners"
+        );
 
         if (!story) {
             res.status(404);
@@ -493,7 +495,9 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
     try {
         // Find the story by ID and update the specified fields
         if (!title) throw new ApiError(400, "either of fields requiered");
-        const story = await Story.findById(storyId).select("id isEditable owners");
+        const story = await Story.findById(storyId).select(
+            "id isEditable owners"
+        );
         if (!story) {
             res.status(404);
             throw new ApiError(404, "Story not found");
@@ -542,7 +546,9 @@ const deleteStory = asyncHandler(async (req, res) => {
     //TODO: delete story
     try {
         if (!storyId) throw new ApiError(401, "id is required");
-        const story = await Story.findById(storyId).select("id isEditable owners");
+        const story = await Story.findById(storyId).select(
+            "id isEditable owners"
+        );
         if (!story) {
             res.status(404);
             throw new ApiError(404, "Story not found");
