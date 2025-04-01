@@ -679,7 +679,7 @@ const getNotifications = asyncHandler(async (req, res) => {
             },
         },
         {
-            $limit: 3,
+            $limit: 10,
         },
         {
             $project: {
@@ -715,7 +715,8 @@ const deleteNotification = asyncHandler(async (req, res) => {
             res.status(404);
             throw new ApiError(404, "Notification not found");
         }
-
+        console.log(notification.message,notificationId);
+        // (notification.message)
         return res.status(200).json(new ApiResponse(200, notification.message));
     } catch (error) {
         throw new ApiError(500, "Something went wrong");

@@ -368,7 +368,7 @@ const updateStoryThumb = asyncHandler(async (req, res) => {
             username: user.username,
             email: user.email,
             userId: id,
-            message: `${populatedStory.title} thumbnail had been updated by ${req.user.username}`,
+            message: `${story.title} thumbnail had been updated by ${req.user.username}`,
             sentiment: "positive",
         });
     });
