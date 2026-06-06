@@ -165,18 +165,16 @@
  * @throws {ApiError} If deletion fails
  */
 
-
+import axios from "axios";
+import jwt from "jsonwebtoken";
+import { NOTIFY_URL } from "../constants.js";
+import { Comment } from "../models/comment.models.js";
+import { Like } from "../models/like.models.js";
+import Notification from "../models/notification.model.js";
 import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import jwt from "jsonwebtoken";
-import { Comment } from "../models/comment.models.js";
-import { Like } from "../models/like.models.js";
-import Notification from "../models/notification.model.js";
-import mongoose from "mongoose";
-import axios from "axios";
-import { NOTIFY_URL } from "../constants.js";
 
 const generateAccessAndRefereshTokens = async (userId) => {
     try {
@@ -199,7 +197,6 @@ const generateAccessAndRefereshTokens = async (userId) => {
 
 const signUp = asyncHandler(async (req, res) => {
     const { email, username, password } = req.body;
-    console.log("email: ", email, typeof email);
 
     if ([email, username, password].some((field) => field?.trim() === "")) {
         throw new ApiError(400, "All fields are required");
@@ -212,6 +209,7 @@ const signUp = asyncHandler(async (req, res) => {
     if (existedUser) {
         throw new ApiError(409, "User with email or username already exists");
     }
+
     const user = await User.create({
         email,
         password,
@@ -225,17 +223,17 @@ const signUp = asyncHandler(async (req, res) => {
     if (!createdUser) {
         throw new ApiError(
             500,
-            "Something went wrong while signing in the user"
+            "Something went wrong while signing up the user"
         );
     }
 
-    await axios.post(`${NOTIFY_URL}/notify_user`, {
-        username: createdUser.username,
-        email: createdUser.email,
-        userId: createdUser._id,
-        message: `New user registered with username ${createdUser.username}`,
-        sentiment: "positive",
-    });
+    // await axios.post(`${NOTIFY_URL}/notify_user`, {
+    //     username: createdUser.username,
+    //     email: createdUser.email,
+    //     userId: createdUser._id,
+    //     message: `New user registered with username ${createdUser.username}`,
+    //     sentiment: "positive",
+    // });
 
     res.status(201).json(
         new ApiResponse(200, createdUser, "User registered Successfully")
@@ -339,7 +337,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             process.env.REFRESH_TOKEN_SECRET
         );
 
-        const user = await User.findById(decodedToken?._id).select("_id refreshToken");
+        const user = await User.findById(decodedToken?._id).select(
+            "_id refreshToken"
+        );
 
         if (!user) {
             throw new ApiError(401, "Invalid refresh token");
@@ -389,13 +389,13 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     user.password = newPassword;
     await user.save({ validateBeforeSave: false });
 
-    axios.post(`${NOTIFY_URL}/notify_user`, {
-        username: user.username,
-        email: user.email,
-        userId: id,
-        message: `Password have been changed`,
-        sentiment: "negative",
-    });
+    // axios.post(`${NOTIFY_URL}/notify_user`, {
+    //     username: user.username,
+    //     email: user.email,
+    //     userId: id,
+    //     message: `Password have been changed`,
+    //     sentiment: "negative",
+    // });
 
     return res
         .status(200)
@@ -424,13 +424,13 @@ const updateUsername = asyncHandler(async (req, res) => {
         },
         { new: true }
     ).select("_id");
-    axios.post(`${NOTIFY_URL}/notify_user`, {
-        username: req.user.username,
-        email: user.email,
-        userId: req.user._id,
-        message: `Username have been changed to ${user.username}`,
-        sentiment: "negative",
-    });
+    // axios.post(`${NOTIFY_URL}/notify_user`, {
+    //     username: req.user.username,
+    //     email: user.email,
+    //     userId: req.user._id,
+    //     message: `Username have been changed to ${user.username}`,
+    //     sentiment: "negative",
+    // });
 
     return res
         .status(200)
@@ -455,20 +455,20 @@ const updateEmail = asyncHandler(async (req, res) => {
         },
         { new: true }
     ).select("_id");
-    axios.post(`${NOTIFY_URL}/notify_user`, {
-        username: user.username,
-        email: req.user.email,
-        userId: id,
-        message: `Email have been updated from ${req.user.emai} to ${user.email} have been changed`,
-        sentiment: "negative",
-    });
-    axios.post(`${NOTIFY_URL}/notify_user`, {
-        username: user.username,
-        email: user.email,
-        userId: id,
-        message: `Email have been updated from ${req.user.emai} to ${user.email} have been changed`,
-        sentiment: "negative",
-    });
+    // axios.post(`${NOTIFY_URL}/notify_user`, {
+    //     username: user.username,
+    //     email: req.user.email,
+    //     userId: id,
+    //     message: `Email have been updated from ${req.user.emai} to ${user.email} have been changed`,
+    //     sentiment: "negative",
+    // });
+    // axios.post(`{NOTIFY_URL}/notify_user`, {
+    //     username: user.username,
+    //     email: user.email,
+    //     userId: id,
+    //     message: `Email have been updated from ${req.user.emai} to ${user.email} have been changed`,
+    //     sentiment: "negative",
+    // });
 
     return res
         .status(200)
@@ -715,7 +715,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
             res.status(404);
             throw new ApiError(404, "Notification not found");
         }
-        console.log(notification.message,notificationId);
+        console.log(notification.message, notificationId);
         // (notification.message)
         return res.status(200).json(new ApiResponse(200, notification.message));
     } catch (error) {
@@ -724,19 +724,19 @@ const deleteNotification = asyncHandler(async (req, res) => {
 });
 
 export {
-    signIn,
-    signUp,
-    signOut,
-    refreshAccessToken,
     changeCurrentPassword,
-    getCurrentUser,
-    updateEmail,
-    updateUsername,
-    getUserAuthorProfile,
-    getstoryHistory,
-    searchUserByUserName,
+    deleteNotification,
     getCommentHistory,
+    getCurrentUser,
     getLikesHistory,
     getNotifications,
-    deleteNotification,
+    getstoryHistory,
+    getUserAuthorProfile,
+    refreshAccessToken,
+    searchUserByUserName,
+    signIn,
+    signOut,
+    signUp,
+    updateEmail,
+    updateUsername,
 };

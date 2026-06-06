@@ -82,7 +82,6 @@ userSchema.methods.generateRefreshToken =  function () {
         return token
     }
     catch (error) {
-        console.log(error);
         throw new Error(error, "in refreshAccessToken")
     }
 }

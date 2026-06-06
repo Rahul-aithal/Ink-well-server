@@ -385,7 +385,6 @@ const updateStory = asyncHandler(async (req, res) => {
     if (!newStory) throw new ApiError(400, "newStory all fields requiered");
 
     const story = await Story.findById(storyId).select("id isEditable owners");
-    console.log({ story });
 
     if (!story) {
         res.status(404);
@@ -415,16 +414,16 @@ const updateStory = asyncHandler(async (req, res) => {
     if (!updatedStory) {
         throw new ApiError(500, "Failed to update the story");
     }
-    story.owners.forEach(async (id) => {
-        const user = await User.findById(id);
-        await axios.post(`${NOTIFY_URL}/notify_user`, {
-            username: user.username,
-            email: user.email,
-            userId: id,
-            message: `${updatedStory.title} story had been updated by ${req.user.username}`,
-            sentiment: "positive",
-        });
-    });
+    // story.owners.forEach(async (id) => {
+    //     const user = await User.findById(id);
+    //     await axios.post(`${NOTIFY_URL}/notify_user`, {
+    //         username: user.username,
+    //         email: user.email,
+    //         userId: id,
+    //         message: `${updatedStory.title} story had been updated by ${req.user.username}`,
+    //         sentiment: "positive",
+    //     });
+    // });
 
     res.status(200).json(new ApiResponse(200, { updatedStory }));
 });
@@ -470,16 +469,16 @@ const updateStoryDescription = asyncHandler(async (req, res) => {
             },
             { new: true, runValidators: true } // Return the updated document and run validation
         ).populate("owners");
-        story.owners.forEach(async (id) => {
-            const user = await User.findById(id);
-            await axios.post(`${NOTIFY_URL}/notify_user`, {
-                username: user.username,
-                email: user.email,
-                userId: id,
-                message: `${updatedStory.title} description had been updated by ${req.user.username}`,
-                sentiment: "positive",
-            });
-        });
+        // story.owners.forEach(async (id) => {
+        //     const user = await User.findById(id);
+        //     await axios.post(`${NOTIFY_URL}/notify_user`, {
+        //         username: user.username,
+        //         email: user.email,
+        //         userId: id,
+        //         message: `${updatedStory.title} description had been updated by ${req.user.username}`,
+        //         sentiment: "positive",
+        //     });
+        // });
         res.status(200).json(new ApiResponse(200, { updatedStory }));
     } catch (error) {
         res.status(500);
@@ -523,16 +522,16 @@ const updateStoryTitle = asyncHandler(async (req, res) => {
         );
         console.log(story.owners);
 
-        story.owners.forEach(async (id) => {
-            const user = await User.findById(id);
-            const res = await axios.post(`${NOTIFY_URL}/notify_user`, {
-                username: user.username,
-                email: user.email,
-                userId: id,
-                message: `${story.title} title  had been updated to ${updatedStory.title} by ${req.user.username}`,
-                sentiment: "positive",
-            });
-        });
+        // story.owners.forEach(async (id) => {
+        //     const user = await User.findById(id);
+        //     const res = await axios.post(`${NOTIFY_URL}/notify_user`, {
+        //         username: user.username,
+        //         email: user.email,
+        //         userId: id,
+        //         message: `${story.title} title  had been updated to ${updatedStory.title} by ${req.user.username}`,
+        //         sentiment: "positive",
+        //     });
+        // });
         res.status(200).json(new ApiResponse(200, { updatedStory }));
     } catch (error) {
         res.status(500);
@@ -561,16 +560,16 @@ const deleteStory = asyncHandler(async (req, res) => {
             throw new ApiError(402, "You are not allowed to delete this");
 
         const storyDeleted = await Story.findByIdAndDelete(storyId);
-        story.owners.forEach(async (id) => {
-            const user = await User.findById(id);
-            await axios.post(`${NOTIFY_URL}/notify_user`, {
-                username: user.username,
-                email: user.email,
-                userId: id,
-                message: `${story.title} title  had been deleted by ${req.user.username}`,
-                sentiment: "negative",
-            });
-        });
+        // story.owners.forEach(async (id) => {
+        //     const user = await User.findById(id);
+        //     await axios.post(`${NOTIFY_URL}/notify_user`, {
+        //         username: user.username,
+        //         email: user.email,
+        //         userId: id,
+        //         message: `${story.title} title  had been deleted by ${req.user.username}`,
+        //         sentiment: "negative",
+        //     });
+        // });
         return res.status(200).json(new ApiResponse(200, storyDeleted));
     } catch (error) {
         throw new ApiError(500, "Something went wrong");
